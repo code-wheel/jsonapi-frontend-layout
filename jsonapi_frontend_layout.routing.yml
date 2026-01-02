@@ -1,0 +1,9 @@
+jsonapi_frontend_layout.resolve:
+  path: '/jsonapi/layout/resolve'
+  defaults:
+    _controller: '\Drupal\jsonapi_frontend_layout\Controller\LayoutResolverController::resolve'
+  requirements:
+    _access: 'TRUE'
+    _format: 'json'
+  methods: [GET]
+

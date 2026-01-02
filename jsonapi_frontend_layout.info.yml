@@ -1,0 +1,10 @@
+name: 'JSON:API Frontend Layout Builder'
+type: module
+description: 'Optional Layout Builder integration for jsonapi_frontend: exposes a normalized layout tree for true headless rendering.'
+core_version_requirement: ^10 || ^11
+package: 'Web services'
+dependencies:
+  - jsonapi_frontend:jsonapi_frontend
+  - drupal:layout_builder
+  - drupal:block_content
+

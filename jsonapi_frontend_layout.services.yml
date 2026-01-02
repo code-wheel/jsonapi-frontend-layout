@@ -1,0 +1,7 @@
+services:
+  jsonapi_frontend_layout.layout_tree_builder:
+    class: Drupal\jsonapi_frontend_layout\Service\LayoutTreeBuilder
+    arguments:
+      - '@plugin.manager.layout_builder.section_storage'
+      - '@entity_type.manager'
+

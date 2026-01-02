@@ -1,0 +1,30 @@
+{
+  "name": "drupal/jsonapi_frontend_layout",
+  "type": "drupal-module",
+  "description": "Optional Layout Builder integration for jsonapi_frontend. Exposes a normalized Layout Builder tree for true headless rendering.",
+  "keywords": [
+    "Drupal",
+    "JSON:API",
+    "headless",
+    "decoupled",
+    "layout builder",
+    "layout"
+  ],
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://www.drupal.org/project/jsonapi_frontend_layout",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/jsonapi_frontend_layout",
+    "source": "https://git.drupalcode.org/project/jsonapi_frontend_layout"
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://packages.drupal.org/8"
+    }
+  ],
+  "require": {
+    "drupal/core": "^10.3 || ^11",
+    "drupal/jsonapi_frontend": "^1.0.7"
+  }
+}
+
