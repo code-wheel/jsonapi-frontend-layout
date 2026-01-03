@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\jsonapi_frontend_layout\Kernel;
 
+use Drupal\block_content\Entity\BlockContent;
+use Drupal\block_content\Entity\BlockContentType;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\layout_builder\Section;
 use Drupal\layout_builder\SectionComponent;
@@ -66,7 +68,18 @@ final class LayoutResolveTest extends KernelTestBase {
       'name' => 'Page',
     ])->save();
 
-    $this->enableLayoutBuilderOnPageDisplay();
+    BlockContentType::create([
+      'id' => 'basic',
+      'label' => 'Basic block',
+    ])->save();
+
+    $block = BlockContent::create([
+      'type' => 'basic',
+      'info' => 'Test block',
+    ]);
+    $block->save();
+
+    $this->enableLayoutBuilderOnPageDisplay((int) $block->getRevisionId());
   }
 
   public function testLayoutResolveIncludesLayoutTree(): void {
@@ -103,9 +116,62 @@ final class LayoutResolveTest extends KernelTestBase {
 
     $component_types = array_map(static fn (array $c) => $c['type'] ?? NULL, $first_section['components']);
     $this->assertContains('field', $component_types);
+    $this->assertContains('inline_block', $component_types);
+    $this->assertContains('block', $component_types);
   }
 
-  private function enableLayoutBuilderOnPageDisplay(): void {
+  public function testResolveReturns400WhenPathMissing(): void {
+    $controller = \Drupal\jsonapi_frontend_layout\Controller\LayoutResolverController::create($this->container);
+    $request = Request::create('/jsonapi/layout/resolve', 'GET', [
+      '_format' => 'json',
+    ]);
+
+    $response = $controller->resolve($request);
+    $this->assertSame(400, $response->getStatusCode());
+  }
+
+  public function testLayoutIsOmittedWhenLayoutBuilderDisabled(): void {
+    NodeType::create([
+      'type' => 'article',
+      'name' => 'Article',
+    ])->save();
+
+    // Ensure a display exists, but keep Layout Builder disabled.
+    $display = $this->container->get('entity_type.manager')
+      ->getStorage('entity_view_display')
+      ->create([
+        'id' => 'node.article.default',
+        'targetEntityType' => 'node',
+        'bundle' => 'article',
+        'mode' => 'default',
+        'status' => TRUE,
+      ]);
+    $display->save();
+
+    $node = Node::create([
+      'type' => 'article',
+      'title' => 'No Layout Builder',
+      'status' => 1,
+      'path' => ['alias' => '/no-layout'],
+    ]);
+    $node->save();
+
+    $controller = \Drupal\jsonapi_frontend_layout\Controller\LayoutResolverController::create($this->container);
+    $request = Request::create('/jsonapi/layout/resolve', 'GET', [
+      'path' => '/no-layout',
+      '_format' => 'json',
+    ]);
+
+    $response = $controller->resolve($request);
+    $payload = json_decode((string) $response->getContent(), TRUE);
+
+    $this->assertIsArray($payload);
+    $this->assertTrue($payload['resolved']);
+    $this->assertSame($node->uuid(), $payload['entity']['id']);
+    $this->assertArrayNotHasKey('layout', $payload);
+  }
+
+  private function enableLayoutBuilderOnPageDisplay(int $block_revision_id): void {
     /** @var \Drupal\layout_builder\Entity\LayoutBuilderEntityViewDisplay $display */
     $display = $this->container->get('entity_type.manager')
       ->getStorage('entity_view_display')
@@ -130,6 +196,22 @@ final class LayoutResolveTest extends KernelTestBase {
       'label_display' => FALSE,
     ]);
     $section->appendComponent($component);
+
+    $inline_block = new SectionComponent('component-2', 'content', [
+      'id' => 'inline_block:basic',
+      'label' => 'Inline block',
+      'label_display' => FALSE,
+      'block_revision_id' => $block_revision_id,
+      'view_mode' => 'full',
+    ]);
+    $section->appendComponent($inline_block);
+
+    $unknown_block = new SectionComponent('component-3', 'content', [
+      'id' => 'system_powered_by_block',
+      'label' => 'Powered by',
+      'label_display' => FALSE,
+    ]);
+    $section->appendComponent($unknown_block);
 
     $display->appendSection($section);
     $display->save();
