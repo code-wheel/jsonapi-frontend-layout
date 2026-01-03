@@ -171,6 +171,43 @@ final class LayoutResolveTest extends KernelTestBase {
     $this->assertArrayNotHasKey('layout', $payload);
   }
 
+  public function testLayoutIsOmittedWhenResolverEntityInfoIsInvalid(): void {
+    $resolver = new class implements \Drupal\jsonapi_frontend\Service\PathResolverInterface {
+      public function resolve(string $path, ?string $langcode = NULL): array {
+        return [
+          'resolved' => TRUE,
+          'kind' => 'entity',
+          'canonical' => '/fake',
+          'entity' => [
+            'type' => 'user_role--user_role',
+            'id' => 'uuid-does-not-matter',
+            'langcode' => 'en',
+          ],
+          'redirect' => NULL,
+          'jsonapi_url' => '/jsonapi/user_role/user_role/uuid-does-not-matter',
+          'data_url' => NULL,
+          'headless' => TRUE,
+          'drupal_url' => NULL,
+        ];
+      }
+    };
+
+    $this->container->set('jsonapi_frontend.path_resolver', $resolver);
+
+    $controller = \Drupal\jsonapi_frontend_layout\Controller\LayoutResolverController::create($this->container);
+    $request = Request::create('/jsonapi/layout/resolve', 'GET', [
+      'path' => '/fake',
+      '_format' => 'json',
+    ]);
+
+    $response = $controller->resolve($request);
+    $payload = json_decode((string) $response->getContent(), TRUE);
+
+    $this->assertIsArray($payload);
+    $this->assertTrue($payload['resolved']);
+    $this->assertArrayNotHasKey('layout', $payload);
+  }
+
   private function enableLayoutBuilderOnPageDisplay(int $block_revision_id): void {
     /** @var \Drupal\layout_builder\Entity\LayoutBuilderEntityViewDisplay $display */
     $display = $this->container->get('entity_type.manager')
@@ -205,6 +242,26 @@ final class LayoutResolveTest extends KernelTestBase {
       'view_mode' => 'full',
     ]);
     $section->appendComponent($inline_block);
+
+    // Invalid revision id should still produce an inline_block entry.
+    $inline_invalid = new SectionComponent('component-2b', 'content', [
+      'id' => 'inline_block:basic',
+      'label' => 'Inline block invalid revision',
+      'label_display' => FALSE,
+      'block_revision_id' => 'nope',
+      'view_mode' => 'full',
+    ]);
+    $section->appendComponent($inline_invalid);
+
+    // Unknown revision should return a NULL block reference.
+    $inline_missing = new SectionComponent('component-2c', 'content', [
+      'id' => 'inline_block:basic',
+      'label' => 'Inline block missing revision',
+      'label_display' => FALSE,
+      'block_revision_id' => 999999,
+      'view_mode' => 'full',
+    ]);
+    $section->appendComponent($inline_missing);
 
     $unknown_block = new SectionComponent('component-3', 'content', [
       'id' => 'system_powered_by_block',
