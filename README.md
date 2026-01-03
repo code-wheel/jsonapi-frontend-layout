@@ -32,3 +32,8 @@ The response matches `/jsonapi/resolve` and adds a `layout` object when applicab
 
 - This module is intentionally read-only and mirrors `jsonapi_frontend` caching behavior (anonymous cacheable; authenticated `no-store`).
 - For rendering, you still fetch the resolved `jsonapi_url` (entity) and any referenced block content via JSON:API.
+
+## Security & caching
+
+- Treat `/jsonapi/layout/resolve` like part of your JSON:API surface (rate limit at the edge).
+- For origin protection + rate limiting guidance, see `jsonapi_frontend`’s `MIGRATION.md` (Security hardening section).
