@@ -1,5 +1,7 @@
 # JSON:API Frontend Layout Builder
 
+[![Drupal Module](https://github.com/code-wheel/jsonapi-frontend-layout/actions/workflows/drupal-module.yml/badge.svg?branch=master)](https://github.com/code-wheel/jsonapi-frontend-layout/actions/workflows/drupal-module.yml?query=branch%3Amaster) [![Semgrep](https://github.com/code-wheel/jsonapi-frontend-layout/actions/workflows/semgrep.yml/badge.svg?branch=master)](https://github.com/code-wheel/jsonapi-frontend-layout/actions/workflows/semgrep.yml?query=branch%3Amaster) [![codecov](https://codecov.io/gh/code-wheel/jsonapi-frontend-layout/branch/master/graph/badge.svg)](https://codecov.io/gh/code-wheel/jsonapi-frontend-layout) [![Security Policy](https://img.shields.io/badge/security-policy-blue.svg)](SECURITY.md)
+
 `jsonapi_frontend_layout` is an optional add-on for `jsonapi_frontend` that exposes a normalized Layout Builder tree for true headless rendering.
 
 ## What it does
@@ -30,4 +32,3 @@ The response matches `/jsonapi/resolve` and adds a `layout` object when applicab
 
 - This module is intentionally read-only and mirrors `jsonapi_frontend` caching behavior (anonymous cacheable; authenticated `no-store`).
 - For rendering, you still fetch the resolved `jsonapi_url` (entity) and any referenced block content via JSON:API.
-

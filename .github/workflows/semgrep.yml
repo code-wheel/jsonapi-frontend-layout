@@ -1,0 +1,36 @@
+name: Semgrep
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  schedule:
+    - cron: "0 3 * * 0"
+
+jobs:
+  semgrep:
+    name: Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run Semgrep
+        run: |
+          docker run --rm -v "$PWD":/src -w /src returntocorp/semgrep:latest \
+            semgrep \
+              --config p/security-audit \
+              --config p/php \
+              --sarif \
+              --output semgrep.sarif \
+              --metrics off
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+
