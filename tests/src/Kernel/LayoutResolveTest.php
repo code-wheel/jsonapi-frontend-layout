@@ -9,9 +9,12 @@ use Drupal\block_content\Entity\BlockContentType;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\layout_builder\Section;
 use Drupal\layout_builder\SectionComponent;
+use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
+use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
+use Drupal\user\RoleInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -118,6 +121,46 @@ final class LayoutResolveTest extends KernelTestBase {
     $this->assertContains('field', $component_types);
     $this->assertContains('inline_block', $component_types);
     $this->assertContains('block', $component_types);
+  }
+
+  /**
+   * Anonymous users must not resolve the layout of unpublished content.
+   *
+   * The route is intentionally `_access: TRUE` (public, like JSON:API core);
+   * entity-level `access('view')` is what actually gates the response. This
+   * proves that gate: an anonymous request for an unpublished node's path
+   * neither resolves the entity nor leaks its layout tree.
+   */
+  public function testUnpublishedLayoutNotResolvedForAnonymous(): void {
+    $node = Node::create([
+      'type' => 'page',
+      'title' => 'Secret Draft',
+      'status' => 0,
+      'path' => ['alias' => '/secret-draft'],
+    ]);
+    $node->save();
+
+    // Switch to an anonymous user that can see published content only.
+    $anonymous = Role::load(RoleInterface::ANONYMOUS_ID)
+      ?? Role::create(['id' => RoleInterface::ANONYMOUS_ID, 'label' => 'Anonymous']);
+    $anonymous->grantPermission('access content');
+    $anonymous->save();
+    $this->container->get('current_user')->setAccount(new AnonymousUserSession());
+
+    $controller = \Drupal\jsonapi_frontend_layout\Controller\LayoutResolverController::create($this->container);
+    $request = Request::create('/jsonapi/layout/resolve', 'GET', [
+      'path' => '/secret-draft',
+      '_format' => 'json',
+    ]);
+
+    $response = $controller->resolve($request);
+    $payload = json_decode((string) $response->getContent(), TRUE);
+
+    $this->assertIsArray($payload);
+    // Must not resolve to the unpublished entity, and no layout may leak
+    // under any response shape.
+    $this->assertNotSame($node->uuid(), $payload['entity']['id'] ?? NULL);
+    $this->assertArrayNotHasKey('layout', $payload);
   }
 
   public function testResolveReturns400WhenPathMissing(): void {

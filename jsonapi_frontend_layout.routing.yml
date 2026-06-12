@@ -3,6 +3,9 @@ jsonapi_frontend_layout.resolve:
   defaults:
     _controller: '\Drupal\jsonapi_frontend_layout\Controller\LayoutResolverController::resolve'
   requirements:
+    # Public endpoint (as JSON:API core): per-entity view access is enforced
+    # in code via $entity->access('view'). Covered by
+    # LayoutResolveTest::testUnpublishedLayoutNotResolvedForAnonymous.
     _access: 'TRUE'
     _format: 'json'
   methods: [GET]

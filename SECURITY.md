@@ -14,3 +14,12 @@ If private reporting is not available for you, contact the maintainers via the D
 - Steps to reproduce (or a proof of concept)
 - Affected versions (Drupal core version, module version, and relevant config)
 - Any suggested mitigation or fix (if you have one)
+
+## Endpoint access model
+
+`/jsonapi/layout/resolve` is a **public** endpoint (`_access: TRUE`), the same
+pattern Drupal's JSON:API core uses. Authorization is not skipped — it is
+enforced per entity in code: the resolver only returns an entity (and its
+layout) when `$entity->access('view')` passes for the current user, so
+anonymous callers never receive unpublished or access-restricted content.
+This is covered by `LayoutResolveTest::testUnpublishedLayoutNotResolvedForAnonymous`.
